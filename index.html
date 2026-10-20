@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sentinel: Gas and Fire Safety Monitoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f4f4;--panel:#fff;--ink:#0a0a0a;--mute:#595959;--line:#dcdcdc;--brand:#111;--ok:#0a0a0a;--okbg:#ececec;--gas:#9a5f00;--gasbg:#fbebc6;--fire:#c2300f;--firebg:#fbdcd2;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a0a0a;--panel:#151515;--ink:#f2f2f2;--mute:#9a9a9a;--line:#2e2e2e;--brand:#f2f2f2;--ok:#f2f2f2;--okbg:#1d1d1d;--gas:#f0b23a;--gasbg:#392d11;--fire:#ff6a45;--firebg:#41201a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0a0a0a;--panel:#151515;--ink:#f2f2f2;--mute:#9a9a9a;--line:#2e2e2e;--brand:#f2f2f2;--ok:#f2f2f2;--okbg:#1d1d1d;--gas:#f0b23a;--gasbg:#392d11;--fire:#ff6a45;--firebg:#41201a;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3,.state,.brand{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;margin:0}
+[hidden]{display:none!important}
+button,input{font:inherit}
+button{min-height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font-weight:600;cursor:pointer}
+button:hover{background:var(--ink);color:var(--bg)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+button.pri{background:var(--brand);border-color:var(--brand);color:var(--bg)}
+button.pri:hover{filter:brightness(.85);background:var(--brand);color:var(--bg)}
+button.on{background:var(--fire);border-color:var(--fire);color:#fff}
+button:disabled{opacity:.45;cursor:not-allowed}
+/* login */
+#login{min-height:100vh;display:grid}
+@media(min-width:860px){#login{grid-template-columns:1.1fr 1fr}}
+.hero{background:#0a0a0a;color:#f5f5f5;padding:28px 28px 32px;display:flex;flex-direction:column;justify-content:space-between;gap:28px}
+.brand{display:flex;align-items:center;gap:10px;font-size:1.35rem;font-weight:800}
+.hero h2{font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800;line-height:1.1;max-width:16ch}
+.hero ul{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:10px;max-width:42ch;color:#bdbdbd}
+.hero li{padding-left:22px;position:relative}
+.hero li::before{content:"";position:absolute;left:0;top:.55em;width:10px;height:10px;border-radius:50%;background:#fff}
+.hero small{color:#8a8a8a}
+.formside{display:flex;align-items:center;justify-content:center;padding:28px 20px}
+.box{width:100%;max-width:380px}
+.box h1{font-size:1.9rem;font-weight:800}
+.box p{color:var(--mute);margin:6px 0 22px}
+label{display:block;font-weight:600;font-size:.92rem;margin:14px 0 6px}
+.field{position:relative}
+input{width:100%;height:46px;padding:0 14px;border:1.5px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.field button{position:absolute;right:4px;top:3px;min-height:40px;border:0;padding:0 10px;color:var(--brand)}
+.field button:hover{background:transparent;color:var(--ink)}
+.err{color:var(--fire);font-size:.92rem;min-height:1.4em;margin:10px 0}
+.box .pri{width:100%;margin-top:4px}
+.demo{margin-top:18px;padding:12px 14px;border:1px dashed var(--line);border-radius:8px;font-size:.9rem;color:var(--mute)}
+.demo button{min-height:36px;margin-top:8px;font-size:.88rem}
+/* app shell */
+.top{background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--panel);z-index:10}
+.bar{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar .brand{font-size:1.15rem;color:var(--brand)}
+nav{display:flex;gap:4px;margin-left:8px}
+nav button{border:0;min-height:40px;color:var(--mute)}
+nav button.cur{color:var(--ink);box-shadow:inset 0 -3px var(--brand);border-radius:0}
+nav button:hover{background:transparent;color:var(--ink)}
+.who{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:.9rem;color:var(--mute)}
+.who button{min-height:36px;font-size:.88rem}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+.prop{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.prop h1{font-size:1.4rem;font-weight:800}.prop span{color:var(--mute)}
+.banner{border-radius:12px;padding:18px 20px;background:var(--okbg);border:2px solid var(--ok);transition:background .3s,border-color .3s}
+.banner.gas{background:var(--gasbg);border-color:var(--gas)}
+.banner.fire{background:var(--firebg);border-color:var(--fire)}
+.state{font-size:clamp(2rem,7vw,3rem);font-weight:800;line-height:1.05}
+.banner.clear .state{color:var(--ok)}.banner.gas .state{color:var(--gas)}.banner.fire .state{color:var(--fire)}
+.banner p{margin:6px 0 0;max-width:62ch}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat small{display:block;color:var(--mute);font-size:.82rem}.stat b{font-size:1.05rem}
+@media(max-width:560px){.stats{grid-template-columns:1fr}}
+.grid{display:grid;gap:14px;margin-top:14px}
+@media(min-width:860px){.grid{grid-template-columns:1.35fr 1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+h3{font-size:1.05rem;font-weight:600;margin-bottom:10px}
+svg{display:block;width:100%;height:auto}
+.cap{color:var(--mute);font-size:.88rem;margin:8px 0 0}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.gauge{height:16px;background:var(--line);border-radius:8px;position:relative;overflow:hidden}
+.gauge i{position:absolute;inset:0 auto 0 0;width:0;background:var(--ok);transition:width .25s,background .25s}
+.gauge b{position:absolute;top:0;bottom:0;left:40%;width:3px;background:var(--ink)}
+.row{display:flex;justify-content:space-between;gap:10px;margin:6px 0;font-size:.95rem}
+.row span:last-child{color:var(--mute);text-align:right}
+ul{list-style:none;margin:0;padding:0}
+.outs li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.outs li:first-child{border-top:0}
+.dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--mute);flex:none}
+.outs li.on .dot{background:var(--fire);border-color:var(--fire)}
+.outs li.on{font-weight:600}
+.outs em{margin-left:auto;font-style:normal;color:var(--mute);font-size:.88rem;font-weight:400}
+.log{max-height:280px;overflow:auto}
+.log li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:.92rem}
+.log time{color:var(--mute);flex:none;font-variant-numeric:tabular-nums}
+.log .alert{color:var(--fire)}.log .ok{color:var(--ok)}
+.log .sms span{background:var(--gasbg);border-left:4px solid var(--gas);padding:4px 8px;border-radius:4px}
+.full{grid-column:1/-1}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.93rem;min-width:420px}
+th,td{text-align:left;padding:9px 10px;border-top:1px solid var(--line)}
+th{color:var(--mute);font-weight:600;border-top:0}
+.tag{padding:2px 8px;border-radius:99px;font-size:.82rem;font-weight:600;background:var(--gasbg);color:var(--gas)}
+.tag.fire{background:var(--firebg);color:var(--fire)}.tag.ok{background:var(--okbg);color:var(--ok)}
+footer{color:var(--mute);font-size:.85rem;margin:16px 0}
+.live{display:inline-flex;align-items:center;gap:6px}.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mute)}
+.live.connected::before{background:var(--ok)}
+.live.sim::before{background:var(--gas)}
+#bAck{margin-top:12px;background:var(--ink);color:var(--bg)}
+input[type=range]{padding:0;height:32px;accent-color:var(--brand);border:0;background:transparent}
+.chart{height:80px;margin-top:10px;background:var(--bg);border-radius:6px}
+/* connection bar */
+.connbar{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.connbar strong{font-size:.95rem}
+.connbar span{color:var(--mute);font-size:.9rem}
+.connbar .status{margin-left:auto;font-size:.88rem;color:var(--mute);font-variant-numeric:tabular-nums}
+/* plan */
+.wall{fill:var(--panel);stroke:var(--ink);stroke-width:3}
+.lbl{fill:var(--mute);font:600 12px Figtree,sans-serif}
+.sens{fill:var(--ink)}
+.cloud{fill:var(--gas);opacity:var(--g,0);transition:opacity .25s}
+.flame{fill:var(--fire);opacity:0;transform-origin:110px 215px;transition:opacity .2s}
+#plan.fire .flame{opacity:1;animation:flick .5s infinite alternate}
+.win{transition:transform .6s;stroke:var(--ink);stroke-width:6}
+#plan.servo .win{transform:translateX(46px)}
+.door{stroke:var(--ink);stroke-width:6;transform-origin:300px 250px;transition:transform .6s}
+#plan.servo .door{transform:rotate(-75deg)}
+.blades{transform-origin:350px 110px;fill:var(--mute)}
+#plan.fan .blades{animation:spin .5s linear infinite}
+.spray{stroke:var(--mute);stroke-width:2;stroke-linecap:round;stroke-dasharray:4 6;opacity:0}
+#plan.pump .spray{opacity:1;animation:fall .5s linear infinite}
+.head{fill:var(--ink)}
+.led{fill:var(--line);stroke:var(--ink)}
+#plan.led .led{fill:var(--fire);animation:blink .6s infinite alternate}
+.ring{fill:none;stroke:var(--fire);stroke-width:2;opacity:0;transform-origin:262px 56px}
+#plan.buzz .ring{animation:ping 1s infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes flick{to{transform:scale(1.08,.94)}}
+@keyframes blink{50%{opacity:.25}}
+@keyframes fall{to{stroke-dashoffset:-20}}
+@keyframes ping{0%{opacity:.9;transform:scale(.6)}100%{opacity:0;transform:scale(1.4)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<main id="login">
+<section class="hero">
+<svg width="180" height="214" viewBox="0 0 160 190" style="max-width:44vw;height:auto" role="img" aria-label="Sentinel"><path d="M80 6L148 30V92C148 140 118 172 80 186C42 172 12 140 12 92V30Z" fill="#fff"/><path d="M80 18L136 38V92C136 132 112 160 80 174C48 160 24 132 24 92V38Z" fill="none" stroke="#0a0a0a" stroke-width="1.5"/><text x="80" y="100" text-anchor="middle" font-family="Bricolage Grotesque,Figtree,system-ui,sans-serif" font-weight="800" font-size="20" fill="#0a0a0a">Sentinel</text><text x="80" y="119" text-anchor="middle" font-family="Figtree,system-ui,sans-serif" font-weight="600" font-size="8" letter-spacing="2.5" fill="#595959">SAFETY</text></svg>
+<div>
+<h2>Know about a leak or fire the moment it starts.</h2>
+<ul>
+<li>Detects LPG leaks and fire around the clock</li>
+<li>Sends an SMS with your location to you and emergency contacts</li>
+<li>Opens doors and windows, runs the fan and starts the sprinklers automatically</li>
+</ul>
+</div>
+<small>Durban University of Technology, Group 2 project</small>
+</section>
+<section class="formside">
+<div class="box">
+<h1>Sign in</h1>
+<p>Access your property’s safety dashboard.</p>
+<form id="lf" novalidate>
+<label for="em">Email address</label>
+<input id="em" type="email" autocomplete="username" placeholder="you@example.com">
+<label for="pw">Password</label>
+<div class="field"><input id="pw" type="password" autocomplete="current-password" placeholder="Enter your password"><button type="button" id="tg" aria-label="Show password">Show</button></div>
+<div class="err" id="err" role="alert"></div>
+<button class="pri" type="submit">Sign in</button>
+</form>
+<div class="demo">This is a demonstration site with no real accounts. Use the demo login: client@sentinel.demo / demo1234.<br><button type="button" id="fill">Fill demo login</button></div>
+</div>
+</section>
+</main>
+
+<div id="app" hidden>
+<header class="top"><div class="bar">
+<div class="brand"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.2-8 11-4.6-1.8-8-6-8-11V5z" fill="currentColor"/></svg>Sentinel</div>
+<nav aria-label="Main"><button class="cur" data-v="v1">Overview</button><button data-v="v2">Alerts</button><button data-v="v3">Devices</button></nav>
+<div class="who"><span class="live" id="liveDot">Live</span><span id="user"></span><button id="out">Sign out</button></div>
+</div></header>
+
+<div class="wrap">
+
+<!-- ============ CONNECTION BAR ============ -->
+<div class="connbar">
+  <strong>Device link</strong>
+  <button id="connect" class="pri">Connect Arduino</button>
+  <button id="disconnect" hidden>Disconnect</button>
+  <span id="connMsg">Not connected — using offline simulator.</span>
+  <span class="status" id="lastLine">—</span>
+</div>
+
+<section id="v1">
+<div class="prop"><h1>Demo House</h1><span>Durban, South Africa · 1 monitored property</span></div>
+<section class="banner clear" id="banner" aria-live="polite"><div class="state" id="state">All clear</div><p id="desc"></p><button id="bAck" hidden>Acknowledge alert</button></section>
+<div class="stats">
+<div class="stat"><small>System</small><b id="sSys">Online</b></div>
+<div class="stat"><small>Last incident</small><b id="sLast">None</b></div>
+<div class="stat"><small>SMS alerts sent</small><b id="sSms">0</b></div>
+</div>
+<div class="grid">
+<section class="card"><h3>Property view</h3>
+<svg id="plan" viewBox="0 0 400 280" role="img" aria-label="Floor plan showing sensors, fan, sprinklers, door and window">
+<rect class="wall" x="20" y="30" width="360" height="220" rx="6"/>
+<path class="wall" d="M210 30V120M210 160V250" fill="none"/>
+<text class="lbl" x="34" y="52">Kitchen</text><text class="lbl" x="224" y="52">Living room</text>
+<circle class="cloud" cx="110" cy="190" r="78"/>
+<path class="flame" d="M110 215C95 195 105 185 108 168C115 180 125 190 124 200C128 195 130 190 128 185C140 200 128 215 110 215Z"/>
+<rect class="sens" x="62" y="196" width="14" height="14" rx="2"/><text class="lbl" x="56" y="226">MQ-5</text>
+<rect class="sens" x="150" y="196" width="14" height="14" rx="2"/><text class="lbl" x="130" y="226">Flame sensor</text>
+<line class="win" x1="80" y1="30" x2="130" y2="30"/>
+<line class="door" x1="300" y1="250" x2="344" y2="250"/>
+<text class="lbl" x="84" y="22">Window</text><text class="lbl" x="304" y="268">Door</text>
+<circle cx="350" cy="110" r="22" fill="none" stroke="var(--ink)" stroke-width="2"/>
+<g class="blades"><ellipse cx="350" cy="97" rx="5" ry="11"/><ellipse cx="350" cy="123" rx="5" ry="11"/><ellipse cx="337" cy="110" rx="11" ry="5"/><ellipse cx="363" cy="110" rx="11" ry="5"/></g>
+<text class="lbl" x="318" y="146">Exhaust fan</text>
+<circle class="head" cx="80" cy="80" r="4"/><circle class="head" cx="150" cy="80" r="4"/><circle class="head" cx="290" cy="80" r="4"/>
+<path class="spray" d="M80 88V120M150 88V120M290 88V120M72 88L64 116M88 88L96 116M142 88L134 116M158 88L166 116M282 88L274 116M298 88L306 116"/>
+<circle class="led" cx="300" cy="56" r="6"/><circle class="led" cx="318" cy="56" r="6"/>
+<circle class="ring" cx="262" cy="56" r="14"/><path d="M256 52h6l6-5v18l-6-5h-6z" fill="var(--ink)"/>
+</svg>
+<p class="cap">Doors and windows open, the fan spins and sprinklers run as the system responds. Sprinklers run for fire only.</p></section>
+<section class="card"><h3>Sensors</h3>
+<div class="row"><span>MQ-5 gas sensor</span><span id="gv"></span></div>
+<div class="gauge" aria-hidden="true"><i id="gb"></i><b></b></div>
+<svg id="ch" class="chart" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Gas reading over the last 60 seconds"><line id="chT" x1="0" x2="300" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/><polyline id="chL" fill="none" stroke="var(--brand)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+<p class="cap">Last 60 seconds. The dark marker and dashed line show the alarm threshold (<span id="thr">400</span> units).</p>
+<div class="row" style="margin-top:14px"><span>Flame sensor</span><span id="fv"></span></div>
+<h3 style="margin-top:18px">Automatic response</h3><ul class="outs" id="outs"></ul></section>
+<section class="card full"><h3>Test the system</h3>
+<div class="btns"><button id="bReset" disabled title="Connect Arduino first">Reset system</button><button id="bTest" disabled title="Connect Arduino first">Send test SMS</button></div>
+<p class="cap">These commands are sent to the Arduino over serial. Connect the board above to enable them.</p></section>
+<section class="card full"><h3>Activity log</h3><ul class="log" id="log"><li><time>--:--:--</time><span>System ready. Waiting for the first reading.</span></li></ul></section>
+</div>
+</section>
+
+<section id="v2" hidden>
+<div class="prop"><h1>Alerts</h1><span>Who is notified and what has happened</span></div>
+<div class="grid">
+<section class="card"><h3>Alert recipients</h3>
+<table><thead><tr><th>Recipient</th><th>Channel</th><th>Number</th></tr></thead><tbody>
+<tr><td>Homeowner</td><td>SMS with GPS location</td><td>+27 ** *** 0142</td></tr>
+<tr><td>Emergency services</td><td>SMS with GPS location</td><td>+27 ** *** 0199</td></tr></tbody></table>
+<p class="cap">Numbers shown are placeholders for the demonstration.</p></section>
+<section class="card"><h3>What triggers an alert</h3><ul class="outs">
+<li><span class="dot"></span>Gas reading above the set threshold</li>
+<li><span class="dot"></span>Flame detected by the flame sensor</li></ul></section>
+<section class="card full"><h3>Alert settings</h3><label for="th">Gas alarm threshold: <b id="thv">400</b> units</label><input id="th" type="range" min="200" max="800" step="20" value="400"><p class="cap">A lower threshold alerts sooner but can cause false alarms. The threshold is pushed to the Arduino as a rise-above-baseline value when connected.</p></section>
+<section class="card full"><h3>Incident history</h3><div class="tw"><table><thead><tr><th>Started</th><th>Hazard</th><th>Response</th><th>Status</th></tr></thead><tbody id="inc"></tbody></table></div></section>
+</div>
+</section>
+
+<section id="v3" hidden><div class="prop"><h1>Devices</h1><span>Health of the 9 connected components</span></div><section class="card"><div class="tw"><table><thead><tr><th>Device</th><th>Role</th><th>Status</th><th>Reading</th></tr></thead><tbody id="dev"></tbody></table></div></section></section>
+<footer>Sentinel is a student prototype. Phone numbers are placeholders. Sensor values and GPS coordinates come from the connected Arduino when available.</footer>
+</div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Sentinel dashboard — live Arduino bridge via Web Serial API
+   ============================================================ */
+
+const MAX = 1023;          // Arduino analogRead range
+const FALLBACK_T = 400;    // threshold used for offline simulation
+const FLAME_THRESHOLD = 800; // matches firmware (flame when analogRead <= 800)
+
+const $ = id => document.getElementById(id);
+
+/* ---------- UI state ---------- */
+let gas   = 300;
+let flame = false;
+let T     = FALLBACK_T;
+let haz   = "clear";
+let o     = { buzzer:0, led:0, servo:0, fan:0, pump:0 };
+let sent  = {};       // which hazards have triggered an SMS this incident
+let smsN  = 0;
+let inc   = [];       // incident history
+let cur   = null;     // current incident record
+let GPS   = "unknown";
+
+/* hardware mirror (last values reported by the Arduino) */
+const hw = {
+  flameRaw: null,
+  mq5Raw: null,
+  smokeThreshold: null,
+  fan: null, pump: null,
+  door: null, win: null,
+  status: null,
+  lat: null, lon: null, sats: null, fix: false,
+  uptimeSec: 0,
+  connected: false,
+};
+
+const now = () => new Date().toLocaleTimeString([], { hour12:false });
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+let fails = 0, lock = 0;
+function showApp(email){
+  $("login").hidden = true;
+  $("app").hidden   = false;
+  $("user").textContent = email;
+  window.scrollTo(0,0);
+}
+$("tg").onclick = () => {
+  const p = $("pw");
+  const s = p.type === "password";
+  p.type = s ? "text" : "password";
+  $("tg").textContent = s ? "Hide" : "Show";
+  $("tg").setAttribute("aria-label", s ? "Hide password" : "Show password");
+};
+$("fill").onclick = () => {
+  $("em").value = "client@sentinel.demo";
+  $("pw").value = "demo1234";
+  $("err").textContent = "";
+};
+$("lf").onsubmit = e => {
+  e.preventDefault();
+  if (Date.now() < lock){
+    $("err").textContent = "Too many attempts. Try again in " + Math.ceil((lock - Date.now())/1000) + " seconds.";
+    return;
+  }
+  const em = $("em").value.trim().toLowerCase();
+  const pw = $("pw").value;
+  if (!em || !pw){ $("err").textContent = "Enter your email address and password."; return; }
+  if (!/^\S+@\S+\.\S+$/.test(em)){ $("err").textContent = "Enter a valid email address, like you@example.com."; return; }
+  if (em !== "client@sentinel.demo" || pw !== "demo1234"){
+    if (++fails >= 3){ fails = 0; lock = Date.now()+30000; $("err").textContent = "Too many failed attempts. Sign-in is locked for 30 seconds."; return; }
+    $("err").textContent = "Email or password is incorrect (" + (3-fails) + " attempts left). Use the demo login shown below.";
+    return;
+  }
+  fails = 0;
+  try { sessionStorage.setItem("sentinel-user", em); } catch(x){}
+  showApp(em);
+};
+$("out").onclick = () => {
+  try { sessionStorage.removeItem("sentinel-user"); } catch(x){}
+  $("app").hidden = true;
+  $("login").hidden = false;
+  $("pw").value = "";
+  $("err").textContent = "";
+  $("em").focus();
+};
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("cur", x === b));
+  ["v1","v2","v3"].forEach(v => $(v).hidden = b.dataset.v !== v);
+});
+try { const u = sessionStorage.getItem("sentinel-user"); if (u) showApp(u); } catch(x){}
+
+/* ============================================================
+   LOGGING
+   ============================================================ */
+function log(msg, kind){
+  const li = document.createElement("li");
+  li.className = kind || "";
+  li.innerHTML = "<time>" + now() + "</time><span>" + msg + "</span>";
+  const l = $("log");
+  l.prepend(li);
+  while (l.children.length > 40) l.lastChild.remove();
+}
+
+/* ============================================================
+   WEB SERIAL BRIDGE
+   ============================================================ */
+let serialPort   = null;
+let serialWriter = null;
+let readLoop     = null;   // stop flag object
+
+async function connectArduino(){
+  if (!("serial" in navigator)){
+    $("connMsg").textContent = "Web Serial not supported — use Chrome or Edge over https:// or localhost.";
+    return;
+  }
+  try {
+    serialPort = await navigator.serial.requestPort();
+    await serialPort.open({ baudRate: 9600, bufferSize: 4096, flowControl: "none" });
+    serialWriter = serialPort.writable.getWriter();
+    hw.connected = true;
+    $("connMsg").textContent = "Connected at 9600 baud. Waiting for readings…";
+    $("liveDot").textContent = "Live";
+    $("liveDot").classList.remove("sim");
+    $("liveDot").classList.add("connected");
+    $("connect").hidden = true;
+    $("disconnect").hidden = false;
+    $("bReset").disabled = false;
+    $("bTest").disabled  = false;
+    log("Arduino connected over serial.", "ok");
+
+    // Push current threshold
+    sendCommand("S" + minimumRiseForThreshold(T));
+
+    stopSimulator();
+    startReader();
+  } catch (err){
+    console.error(err);
+    $("connMsg").textContent = "Connection failed: " + err.message;
+  }
+}
+
+async function disconnectArduino(){
+  try {
+    if (readLoop) readLoop.stopped = true;
+    if (serialWriter){ try { serialWriter.releaseLock(); } catch(e){} serialWriter = null; }
+    if (serialPort){ await serialPort.close(); serialPort = null; }
+  } catch(e){ console.warn(e); }
+
+  hw.connected = false;
+  $("connMsg").textContent = "Disconnected — using offline simulator.";
+  $("liveDot").textContent = "Demo";
+  $("liveDot").classList.remove("connected");
+  $("liveDot").classList.add("sim");
+  $("connect").hidden = false;
+  $("disconnect").hidden = true;
+  $("bReset").disabled = true;
+  $("bTest").disabled  = true;
+  log("Arduino disconnected. Reverting to demo mode.", "ok");
+  startSimulator();
+}
+
+async function sendCommand(cmd){
+  if (!serialWriter) return;
+  try {
+    await serialWriter.write(new TextEncoder().encode(cmd + "\n"));
+  } catch (e){ console.warn("Serial write failed", e); }
+}
+
+/* Reader loop parses incoming lines with the same shape the firmware prints */
+async function startReader(){
+  const decoder = new TextDecoderStream();
+  const closed  = serialPort.readable.pipeTo(decoder.writable).catch(()=>{});
+  const reader  = decoder.readable.getReader();
+  readLoop = { stopped: false };
+
+  let buf = "";
+  try {
+    while (!readLoop.stopped){
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += value;
+      let lines = buf.split("\n");
+      buf = lines.pop();
+      for (const line of lines){
+        const trimmed = line.trim();
+        if (trimmed) parseArduinoLine(trimmed);
+      }
+    }
+  } catch (e){
+    console.warn("Reader error", e);
+  } finally {
+    try { reader.releaseLock(); } catch(e){}
+    try { await closed; } catch(e){}
+  }
+}
+
+/* ============================================================
+   PARSE ARDUINO OUTPUT
+   Expected line format (from firmware):
+   Flame: 512 | MQ-5: 340 | Smoke threshold: 400 | Fan: ON | Pump: OFF | Door: OPEN | Window: CLOSED | Status: FLAME DETECTED | GPS: Lat=-29.858700 Lon=31.021800 Sats=7 [FIX]
+   ============================================================ */
+function parseArduinoLine(line){
+  $("lastLine").textContent = line.length > 90 ? line.slice(0,90) + "…" : line;
+
+  const grab = re => { const m = line.match(re); return m ? m[1] : null; };
+
+  const f   = grab(/Flame:\s*(\d+)/);
+  const mq  = grab(/MQ-5:\s*(\d+)/);
+  const sth = grab(/Smoke threshold:\s*(\d+)/);
+  const fan = grab(/Fan:\s*(ON|OFF)/);
+  const pm  = grab(/Pump:\s*(ON|OFF)/);
+  const dor = grab(/Door:\s*(OPEN|CLOSED)/);
+  const win = grab(/Window:\s*(OPEN|CLOSED)/);
+  const st  = grab(/Status:\s*([^|]+?)\s*(?=\|GPS:|$)/);
+  const lat = grab(/Lat=(-?\d+\.\d+)/);
+  const lon = grab(/Lon=(-?\d+\.\d+)/);
+  const sat = grab(/Sats=(\d+)/);
+  const fix = /\[FIX\]/.test(line);
+
+  if (f   !== null){ hw.flameRaw = +f; flame = (+f) <= FLAME_THRESHOLD; }
+  if (mq  !== null){ hw.mq5Raw   = +mq; gas   = +mq; }
+  if (sth !== null) hw.smokeThreshold = +sth;
+  if (fan) hw.fan  = fan === "ON";
+  if (pm)  hw.pump = pm  === "ON";
+  if (dor) hw.door = dor === "OPEN";
+  if (win) hw.win  = win === "OPEN";
+  if (st)  hw.status = st.trim();
+  if (lat && lon){ hw.lat = +lat; hw.lon = +lon; GPS = lat + ", " + lon; }
+  if (sat) hw.sats = +sat;
+  hw.fix = fix;
+
+  /* mirror hardware outputs onto dashboard state */
+  o.fan    = hw.fan    ? 1 : 0;
+  o.pump   = hw.pump   ? 1 : 0;
+  o.servo  = hw.door   ? 1 : 0;
+
+  /* Buzzer + LED: the firmware's runAlarm() drives these together
+     with the fan whenever a hazard is active. The status string is
+     "NORMAL" when idle; anything else (FLAME…, MQ-5…, HIGH…, etc.)
+     means the alarm is on. Keep the state sticky while the fan is
+     running so a brief blank-status line doesn't flicker them off. */
+  const idle = !hw.status || /^NORMAL/i.test(hw.status);
+  o.buzzer = idle ? 0 : 1;
+  o.led    = o.buzzer;
+
+  /* hazard state from firmware status */
+  let newHaz = "clear";
+  if (hw.status){
+    if (/FLAME/i.test(hw.status)) newHaz = "fire";
+    else if (/SMOKE|MQ-5/i.test(hw.status)) newHaz = "gas";
+  }
+  if (newHaz !== haz) evaluateTransition(haz, newHaz);
+
+  /* graph */
+  hist.push(gas);
+  if (hist.length > 240) hist.shift();
+
+  render();
+  drawChart();
+  if (!$("v3").hidden) drawDev();
+}
+
+/* Track incident transitions from real hardware, so the history tab
+   and SMS counters stay meaningful. */
+function evaluateTransition(prev, next){
+  haz = next;
+  if (next === "clear"){
+    sent = {};
+    if (cur){ cur.end = now(); cur = null; }
+    log("Readings back to normal. Responses switched off.", "ok");
+    return;
+  }
+  if (prev === "clear"){
+    cur = { start: now(), gas: 0, fire: 0 };
+    inc.unshift(cur);
+  }
+  if (cur && !cur[next]){ cur[next] = 1; cur.ack = 0; }
+  log(next === "fire"
+    ? "Flame sensor detected a flame."
+    : "MQ-5 reading passed the threshold.", "alert");
+
+  if (!sent[next]){
+    sent[next] = 1;
+    log("Arduino reports an alert was dispatched via the GSM module.", "sms");
+    smsN++;
+  }
+}
+
+/* ============================================================
+   OFFLINE SIMULATOR (fallback when no board is connected)
+   ============================================================ */
+let simTimer = null;
+let simBurst = 0;
+const hist = [];
+
+function startSimulator(){
+  if (simTimer) return;
+  simTimer = setInterval(() => {
+    if (!hw.connected){
+      if (simBurst > 0){ gas = Math.min(MAX, gas + 45); simBurst--; }
+      else gas = Math.max(300, gas - (o.fan ? 12 : 2)) + (Math.random() - .5) * 5;
+
+      const newHaz = flame ? "fire" : gas >= T ? "gas" : "clear";
+      if (newHaz !== haz){
+        evaluateTransition(haz, newHaz);
+        if (newHaz !== "clear"){
+          o = { buzzer:1, led:1, servo:1, fan:1, pump: newHaz === "fire" ? 1 : 0 };
+        } else {
+          o = { buzzer:0, led:0, servo:0, fan:0, pump:0 };
+        }
+      }
+
+      hist.push(gas); if (hist.length > 240) hist.shift();
+      render(); drawChart();
+      if (!$("v3").hidden) drawDev();
+    }
+  }, 250);
+}
+function stopSimulator(){
+  if (simTimer){ clearInterval(simTimer); simTimer = null; }
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  $("banner").className = "banner " + haz;
+  $("state").textContent = { clear:"All clear", gas:"Gas hazard", fire:"Fire hazard" }[haz];
+
+  $("desc").textContent =
+    haz === "clear" ? "Monitoring the MQ-5 gas sensor and the flame sensor." :
+    !o.fan ? "Reading GPS position and sending SMS alerts." :
+    haz === "fire" ? "Alerts sent. Warnings on, doors and windows open, fan running, pump spraying." :
+                     "Alerts sent. Warnings on, doors and windows open, fan running. Pump stays off.";
+
+  $("sSys").textContent  = hw.connected ? (haz === "clear" ? "Online, monitoring" : "Hazard active")
+                                        : (haz === "clear" ? "Demo (offline)"   : "Hazard active (demo)");
+  $("sLast").textContent = inc[0] ? inc[0].start : "None";
+  $("sSms").textContent  = smsN;
+  $("bAck").hidden = !(haz !== "clear" && cur && !cur.ack && o.fan);
+
+  document.querySelector(".gauge b").style.left = (T / MAX * 100) + "%";
+  $("chT").setAttribute("y1", 78 - T / MAX * 76);
+  $("chT").setAttribute("y2", 78 - T / MAX * 76);
+  $("gv").textContent = Math.round(gas) + " units";
+  const g = $("gb");
+  g.style.width = Math.min(100, gas / MAX * 100) + "%";
+  g.style.background = gas >= T ? "var(--gas)" : "var(--ok)";
+  $("fv").textContent = flame ? "Flame detected" : "No flame";
+
+  const sm = sent.gas || sent.fire;
+  $("outs").innerHTML =
+    OUT_LIST.map(([k,n]) => '<li class="' + (o[k] ? "on" : "") + '"><span class="dot"></span>' + n + "<em>" + (o[k] ? "On" : "Off") + "</em></li>").join("") +
+    '<li class="' + (sm ? "on" : "") + '"><span class="dot"></span>GSM alert<em>' + (sm ? "SMS sent" : "Ready") + "</em></li>";
+
+  const p = $("plan");
+  p.setAttribute("class", [
+    haz === "fire" && "fire",
+    o.servo && "servo",
+    o.fan   && "fan",
+    o.pump  && "pump",
+    o.led   && "led",
+    o.buzzer && "buzz",
+  ].filter(Boolean).join(" "));
+  p.style.setProperty("--g", Math.max(0, (gas - 300) / (MAX - 300)) * 0.7);
+
+  $("inc").innerHTML = inc.length ? inc.map(i => {
+    const f = i.fire;
+    const t = f && i.gas ? "Gas and fire" : f ? "Fire" : "Gas";
+    return "<tr><td>" + i.start +
+           '</td><td><span class="tag' + (f ? " fire" : "") + '">' + t + "</span></td><td>" +
+           (i.sms ? "SMS delivered in " + i.sms + " s" : "Alerts sent") +
+           (f ? ", sprinklers on" : ", pump off") +
+           '</td><td><span class="tag' + (i.end ? " ok" : "") + '">' +
+           (i.end ? "Resolved " + i.end : i.ack ? "Acknowledged " + i.ack : "Active") +
+           "</span></td></tr>";
+  }).join("") : '<tr><td colspan="4">No incidents yet. Introduce smoke or flame with the Arduino to see one here.</td></tr>';
+}
+const OUT_LIST = [["buzzer","Buzzer"],["led","Warning LEDs"],["servo","Doors and windows"],["fan","Exhaust fan"],["pump","Water pump and sprinkler"]];
+
+function drawChart(){
+  $("chL").setAttribute("points", hist.map((v,i)=>
+    (i/239*300).toFixed(1) + "," + (78 - Math.min(Math.max(v,0), MAX) / MAX * 76).toFixed(1)
+  ).join(" "));
+}
+
+function drawDev(){
+  const rows = [
+    ["Arduino Uno",       "Controller",        hw.connected ? "Uptime live" : "Demo mode"],
+    ["MQ-5 gas sensor",   "Gas detection",     hw.mq5Raw   !== null ? hw.mq5Raw + " raw (baseline+rise threshold " + (hw.smokeThreshold ?? "?") + ")" : "—"],
+    ["Flame sensor",      "Fire detection",    hw.flameRaw !== null ? hw.flameRaw + " raw · " + (flame ? "FLAME" : "no flame") : "—"],
+    ["GSM module",        "SMS alerts",        hw.connected ? "Online" : "Demo"],
+    ["GPS module",        "Location",          hw.fix ? (hw.sats ?? "?") + " sats · " + (hw.lat ?? 0).toFixed(5) + ", " + (hw.lon ?? 0).toFixed(5) : (hw.connected ? "No fix yet" : "Demo coordinate")],
+    ["Servo motors",      "Doors and windows", hw.door !== null ? (hw.door && hw.win ? "Open" : hw.door ? "Door open" : hw.win ? "Window open" : "Closed") : "—"],
+    ["Exhaust fan",       "Ventilation",       hw.fan  === null ? "—" : (hw.fan  ? "Running" : "Idle")],
+    ["Water pump",        "Sprinklers",        hw.pump === null ? "—" : (hw.pump ? "Running" : "Idle")],
+    ["Battery",           "Power",             "87%"],
+  ];
+  $("dev").innerHTML = rows.map(r =>
+    "<tr><td>" + r[0] + "</td><td>" + r[1] +
+    '</td><td><span class="tag ' + (hw.connected ? "ok" : "") + '">' + (hw.connected ? "Online" : "Demo") +
+    "</span></td><td>" + r[2] + "</td></tr>"
+  ).join("");
+}
+
+/* ============================================================
+   THRESHOLD SLIDER -> Arduino
+   The firmware expects a rise-above-baseline value.
+   We keep the UI range in "units" for continuity and translate:
+     UI 400  ->  rise 40   (matches firmware default minimumSmokeRise)
+     UI 200  ->  rise 20
+     UI 800  ->  rise 80
+   ============================================================ */
+function minimumRiseForThreshold(uiValue){
+  // Map UI 200..800 -> 20..80 (10% of scale)
+  const rise = Math.round(uiValue / 10);
+  return Math.min(200, Math.max(5, rise));
+}
+
+$("th").oninput = e => {
+  T = +e.target.value;
+  $("thv").textContent = T;
+  $("thr").textContent = T;
+  if (hw.connected) sendCommand("S" + minimumRiseForThreshold(T));
+  render(); drawChart();
+};
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+$("connect").onclick    = connectArduino;
+$("disconnect").onclick = disconnectArduino;
+
+$("bReset").onclick = () => {
+  if (!hw.connected) return;
+  log("Reset command sent to Arduino.", "test");
+  sendCommand("R");
+};
+$("bTest").onclick = () => {
+  if (!hw.connected) return;
+  log("Test SMS command sent to Arduino.", "test");
+  sendCommand("T");
+};
+$("bAck").onclick = () => {
+  if (cur && !cur.ack){
+    cur.ack = now();
+    o.buzzer = 0;
+    log("Alert acknowledged by the user. Buzzer silenced.", "ok");
+    render();
+  }
+};
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+render();
+drawChart();
+log("Dashboard loaded. Connect the Arduino to start receiving live readings.", "ok");
+startSimulator();
+</script>
+</body>
+</html>
